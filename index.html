@@ -271,11 +271,11 @@ footer{background:var(--dk);padding:64px 60px 40px;color:var(--st);}
     </a>
     <div class="hero-stats">
       <div class="hero-stat">
-        <p class="hero-stat-num" data-target="70">70+</p>
+        <p class="hero-stat-num" data-target="70">0</p>
         <p class="hero-stat-label">Species Captured</p>
       </div>
       <div class="hero-stat">
-        <p class="hero-stat-num" data-target="4">4+</p>
+        <p class="hero-stat-num" data-target="4">0</p>
         <p class="hero-stat-label">Years Experience</p>
       </div>
       <div class="hero-stat">
@@ -597,8 +597,8 @@ footer{background:var(--dk);padding:64px 60px 40px;color:var(--st);}
     <p class="ab">Based in Ontario, Canada, Shabna spends her days chasing light through forests, wetlands, and open skies. With four years behind the lens, her work is rooted in patience — the kind that teaches you to sit still long enough for an owl to turn its gaze, or for the clouds to part at exactly the right moment over a mountain lake.</p>
     <p class="ab">Every photograph is an invitation to slow down and notice what has always been there.</p>
     <div class="astat">
-      <div><p class="sn" data-target="4">4+</p><p class="slb">Years Shooting</p></div>
-      <div><p class="sn" data-target="70">70+</p><p class="slb">Species Captured</p></div>
+      <div><p class="sn" data-target="4">0</p><p class="slb">Years Shooting</p></div>
+      <div><p class="sn" data-target="70">0</p><p class="slb">Species Captured</p></div>
       <div><p class="sn">ON</p><p class="slb">Ontario, Canada</p></div>
     </div>
     <p class="gt2">Equipment</p>
@@ -659,7 +659,7 @@ footer{background:var(--dk);padding:64px 60px 40px;color:var(--st);}
   </div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
 <script>
 // 1. Corrected Image Map (Removed 'data:' and fixed 'image' folder)
 const M = {
@@ -761,34 +761,37 @@ window.addEventListener('scroll', () => {
 
 /* ── Animated Counter ── */
 function animateCounter(el) {
-  var raw    = el.getAttribute('data-target');
-  var target = parseInt(raw);
-  if (isNaN(target)) { el.textContent = raw; return; }
-  var suffix   = '+';
+  var target = parseInt(el.getAttribute('data-target'));
+  if (isNaN(target)) return;
+  var start    = 0;
   var duration = 2000;
-  var fps      = 30;
-  var steps    = fps * (duration / 1000);
-  var step     = 0;
+  var startTime = null;
   el.textContent = '0';
-  var t = setInterval(function() {
-    step++;
-    var val = Math.round(target * (step / steps));
-    el.textContent = (step >= steps ? target : val) + suffix;
-    if (step >= steps) clearInterval(t);
-  }, duration / steps);
+  function step(timestamp) {
+    if (!startTime) startTime = timestamp;
+    var progress = Math.min((timestamp - startTime) / duration, 1);
+    // ease out quad
+    var eased = 1 - (1 - progress) * (1 - progress);
+    el.textContent = Math.floor(eased * target) + '+';
+    if (progress < 1) requestAnimationFrame(step);
+    else el.textContent = target + '+';
+  }
+  requestAnimationFrame(step);
 }
 
-// Run counters when element scrolls into view
-var counterEls = document.querySelectorAll('[data-target]');
-var counterObserver = new IntersectionObserver(function(entries) {
+// Trigger when scrolled into view, fire once
+var counterObserver = new IntersectionObserver(function(entries, obs) {
   entries.forEach(function(entry) {
     if (entry.isIntersecting) {
       animateCounter(entry.target);
-      counterObserver.unobserve(entry.target);
+      obs.unobserve(entry.target);
     }
   });
-}, { threshold: 0.3 });
-counterEls.forEach(function(el) { counterObserver.observe(el); });
+}, { threshold: 0, rootMargin: '0px 0px -50px 0px' });
+
+document.querySelectorAll('[data-target]').forEach(function(el) {
+  counterObserver.observe(el);
+});
 
 /* ── Tab switching ── */
 function switchTab(tab, btn) {
