@@ -721,36 +721,38 @@ const stories = {
 };
 
 /* ── Slideshow Logic ── */
-const slides = document.querySelectorAll('.hs');
-const dots   = document.querySelectorAll('.sdot');
-// Matches HTML order: slide 0=moraine-lake, 1=winter-forest, 2=foggy-road
-const titles = ['Moraine Lake', 'Winter Forest', 'Forest Road'];
-const subs   = ['Banff · Alberta', 'British Columbia · Canada', 'Ontario · Canada'];
-let cur = 0;
-let autoTimer;
+(function() {
+  const slides = Array.from(document.querySelectorAll('.hs'));
+  const dots   = Array.from(document.querySelectorAll('.sdot'));
+  const titles = ['Moraine Lake', 'Winter Forest', 'Forest Road'];
+  const subs   = ['Banff · Alberta', 'British Columbia · Canada', 'Ontario · Canada'];
+  let cur = 0;
+  let timer;
 
-function gs(n) {
-  slides[cur].classList.remove('active');
-  dots[cur].classList.remove('active');
-  cur = n;
-  slides[cur].classList.add('active');
-  dots[cur].classList.add('active');
-  document.getElementById('slide-title').textContent = titles[n];
-  document.getElementById('slide-sub').textContent   = subs[n];
-}
+  function goTo(n) {
+    slides[cur].classList.remove('active');
+    dots[cur].classList.remove('active');
+    cur = (n + slides.length) % slides.length;
+    slides[cur].classList.add('active');
+    dots[cur].classList.add('active');
+    document.getElementById('slide-title').textContent = titles[cur];
+    document.getElementById('slide-sub').textContent   = subs[cur];
+  }
 
-function startAuto() {
-  clearInterval(autoTimer);
-  autoTimer = setInterval(() => gs((cur + 1) % slides.length), 5000);
-}
+  function startTimer() {
+    clearInterval(timer);
+    timer = setInterval(function() { goTo(cur + 1); }, 4000);
+  }
 
-// Attach dot click handlers — reset timer on manual click
-dots.forEach((dot, i) => {
-  dot.addEventListener('click', () => { gs(i); startAuto(); });
-});
+  dots.forEach(function(dot, i) {
+    dot.onclick = function() { goTo(i); startTimer(); };
+  });
 
-// Kick off auto-advance
-startAuto();
+  // expose gs() for any inline onclick="gs(n)" calls
+  window.gs = function(n) { goTo(n); startTimer(); };
+
+  startTimer();
+})();
 
 /* ── Nav scroll style ── */
 window.addEventListener('scroll', () => {
@@ -758,26 +760,35 @@ window.addEventListener('scroll', () => {
 });
 
 /* ── Animated Counter ── */
-function animateCounter(element) {
-  const target = parseInt(element.getAttribute('data-target'));
-  const suffix = '+';
-  const duration = 1500;
-  const steps = 60;
-  const increment = target / steps;
-  let current = 0;
-  let step = 0;
-  element.textContent = '0';
-  const timer = setInterval(() => {
+function animateCounter(el) {
+  var raw    = el.getAttribute('data-target');
+  var target = parseInt(raw);
+  if (isNaN(target)) { el.textContent = raw; return; }
+  var suffix   = '+';
+  var duration = 2000;
+  var fps      = 30;
+  var steps    = fps * (duration / 1000);
+  var step     = 0;
+  el.textContent = '0';
+  var t = setInterval(function() {
     step++;
-    current = Math.min(Math.floor(increment * step), target);
-    element.textContent = current + (isNaN(target) ? "" : suffix);
-    if (step >= steps) {
-        if(element.getAttribute('data-target') === "ON") element.textContent = "ON";
-        clearInterval(timer);
-    }
+    var val = Math.round(target * (step / steps));
+    el.textContent = (step >= steps ? target : val) + suffix;
+    if (step >= steps) clearInterval(t);
   }, duration / steps);
 }
-document.querySelectorAll('[data-target]').forEach(animateCounter);
+
+// Run counters when element scrolls into view
+var counterEls = document.querySelectorAll('[data-target]');
+var counterObserver = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) {
+      animateCounter(entry.target);
+      counterObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.3 });
+counterEls.forEach(function(el) { counterObserver.observe(el); });
 
 /* ── Tab switching ── */
 function switchTab(tab, btn) {
