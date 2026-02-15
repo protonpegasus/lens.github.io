@@ -287,7 +287,7 @@ footer{background:var(--dk);padding:64px 60px 40px;color:var(--st);}
   
   <div class="hero-right" id="hero-right">
     <div class="hs active">
-      <img src="images/foggy-road.jpg">
+      <img src="images/moraine-lake.jpg">
       <div class="hs-overlay"></div>
     </div>
     <div class="hs">
@@ -295,7 +295,7 @@ footer{background:var(--dk);padding:64px 60px 40px;color:var(--st);}
       <div class="hs-overlay"></div>
     </div>
     <div class="hs">
-      <img src="images/moraine-lake.jpg">
+      <img src="images/foggy-road.jpg">
       <div class="hs-overlay"></div>
     </div>
     
@@ -722,10 +722,12 @@ const stories = {
 
 /* ── Slideshow Logic ── */
 const slides = document.querySelectorAll('.hs');
-const dots = document.querySelectorAll('.sdot');
-const titles = ['Foggy Forest Road', 'Winter Forest', 'Moraine Lake'];
-const subs = ['Ontario · Canada', 'British Columbia · Canada', 'Banff · Alberta'];
+const dots   = document.querySelectorAll('.sdot');
+// Matches HTML order: slide 0=moraine-lake, 1=winter-forest, 2=foggy-road
+const titles = ['Moraine Lake', 'Winter Forest', 'Forest Road'];
+const subs   = ['Banff · Alberta', 'British Columbia · Canada', 'Ontario · Canada'];
 let cur = 0;
+let autoTimer;
 
 function gs(n) {
   slides[cur].classList.remove('active');
@@ -734,15 +736,21 @@ function gs(n) {
   slides[cur].classList.add('active');
   dots[cur].classList.add('active');
   document.getElementById('slide-title').textContent = titles[n];
-  document.getElementById('slide-sub').textContent = subs[n];
-  const im = slides[cur].querySelector('img');
-  im.style.animation = 'none';
-  im.offsetHeight; // trigger reflow
-  im.style.animation = '';
+  document.getElementById('slide-sub').textContent   = subs[n];
 }
 
-// Auto-advance every 6 seconds
-setInterval(() => gs((cur + 1) % 3), 6000);
+function startAuto() {
+  clearInterval(autoTimer);
+  autoTimer = setInterval(() => gs((cur + 1) % slides.length), 5000);
+}
+
+// Attach dot click handlers — reset timer on manual click
+dots.forEach((dot, i) => {
+  dot.addEventListener('click', () => { gs(i); startAuto(); });
+});
+
+// Kick off auto-advance
+startAuto();
 
 /* ── Nav scroll style ── */
 window.addEventListener('scroll', () => {
